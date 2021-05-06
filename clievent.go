@@ -23,13 +23,13 @@ func check(e error) {
 	}
 }
 
-func push_notif(token string, body string, title string) {
-	// Make sure you set the `To`, `Title`, and `Body` properties
+func push_notif(token string, body string, title string, data map[string]interface{}) {
 	m := expo.NewExpoPushMessage()
 
-	m.To = token    // Your expo push token
-	m.Body = body   // The body of the notification
-	m.Title = title // The title of the notification
+	m.To = token
+	m.Body = body
+	m.Title = title
+	m.Data = data
 
 	_, err := expoClient.SendPushNotification(m)
 	check(err)
@@ -55,6 +55,7 @@ func main() {
 
 	reader := bufio.NewReader(token_file)
 	token, err = reader.ReadString('\n')
+	check(err)
 
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Stdout = os.Stdout
@@ -66,14 +67,20 @@ func main() {
 	var ret_code string
 	response := cmd.Wait()
 	elapsed := time.Since(start)
+	var body string
 	if response == nil {
 		ret_code = "0"
+		body = "Successful!"
 	} else {
 		ret_code = response.Error()
+		body = "Failed!"
 	}
 	hostname, err := os.Hostname()
 	check(err)
-	payload := strconv.Itoa(int(time.Now().Unix())) + ";" + hostname + ";" + ret_code + ";" + elapsed.String()
-	push_notif(token[:41], payload, command)
-	return
+	payload := make(map[string]interface{})
+	payload["id"] = strconv.FormatInt(time.Now().Unix(), 10)
+	payload["device"] = hostname
+	payload["returned"] = ret_code
+	payload["real_time"] = elapsed.String()
+	push_notif(token[:41], body, command, payload)
 }
