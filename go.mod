@@ -1,4 +1,4 @@
-module github.com/mohammad-yazdani/clievent
+module github.com/tiredgoosedevelopers/clievent
 
 go 1.16
 
